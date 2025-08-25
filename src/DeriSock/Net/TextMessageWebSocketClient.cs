@@ -44,6 +44,7 @@ public sealed class TextMessageWebSocketClient : ITextMessageClient
   /// <inheritdoc />
   public async Task Connect(Uri endpoint, CancellationToken cancellationToken = default)
   {
+    _logger?.Debug("TextMessageWebSocketClient::Connect: Entering...");
     if (IsConnected)
       throw new InvalidOperationException();
 
@@ -66,13 +67,18 @@ public sealed class TextMessageWebSocketClient : ITextMessageClient
       _logger?.Error(ex, "TextMessageWebSocketClient::Connect :: Exception while attempting to connect the ClientWebSocket to the endpoint");
       throw;
     }
+    _logger?.Debug("TextMessageWebSocketClient::Connect: Connection success!");
   }
 
   /// <inheritdoc />
   public async Task Disconnect(CancellationToken cancellationToken)
   {
     if (!IsConnected)
+    {
+      _logger?.Debug("TextMessageWebSocketClient::Disconnect called when not connected");
       throw new InvalidOperationException();
+    }
+      
 
     _logger?.Information("Closing connection to the endpoint");
 
@@ -151,7 +157,8 @@ public sealed class TextMessageWebSocketClient : ITextMessageClient
           if (_webSocket is null)
           {
             _logger?.Debug("TextMessageWebSocketClient::GetMessageStream: Socket null");
-            continue;
+            // If the socket is null, we should throw, as this is an invalid state
+            throw new InvalidOperationException("WebSocket is null");
           }
 
           if (_webSocket.State == WebSocketState.Aborted)
@@ -221,6 +228,11 @@ public sealed class TextMessageWebSocketClient : ITextMessageClient
         catch (Exception ex)
         {
           _logger?.Error(ex, "TextMessageWebSocketClient::GetMessageStream: Connection closed by unknown error");
+          if (_webSocket is null)
+          {
+            _logger?.Debug("TextMessageWebSocketClient::GetMessageStream: Websocket is null, re-throwing...");
+            throw;
+          }
         }
 
         if (!string.IsNullOrEmpty(message))

@@ -68,7 +68,7 @@ public partial class DeribitClient : IDisposable
   /// <summary>
   /// Gets or sets, how many times a re-connect will be tried before giving up.
   /// </summary>
-  public int ReConnectMaxAttempts { get; set; } = 5;
+  public int ReConnectMaxAttempts { get; set; } = Int32.MaxValue;
 
   private readonly ILogger? _logger;
   private readonly JsonRpcRequestTaskSourceMap _requestTaskSourceMap = new();
@@ -156,10 +156,13 @@ public partial class DeribitClient : IDisposable
   /// <returns>The task object representing the asynchronous operation.</returns>
   public async Task Disconnect(CancellationToken cancellationToken = default)
   {
+    _logger?.Debug("DeribitClient::Disconnect: Disconnecting from the endpoint");
     if (_processMessageStreamTask is not null)
     {
+      _logger?.Debug("DeribitClient::Disconnect: _processMessageStreamTask is not null -> Cancelling message processing task");
       _processMessageStreamCts?.Cancel();
       await Task.WhenAll(_processMessageStreamTask).ConfigureAwait(false);
+      _logger?.Debug("DeribitClient::Disconnect: Message processing task cancelled");
     }
 
     await _messageSource.Disconnect(cancellationToken).ConfigureAwait(false);
@@ -170,18 +173,28 @@ public partial class DeribitClient : IDisposable
     RefreshToken = null;
 
     Disconnected?.Invoke(this, EventArgs.Empty);
+    _logger?.Debug("DeribitClient::Disconnect: Disconnected from the endpoint");
   }
 
   private async Task ReConnect()
   {
+    _logger?.Debug("DeribitClient::ReConnect: ReConnecting to the endpoint...");
     if (_reconnectLock.CurrentCount < 1)
+    {
+      _logger?.Debug("DeribitClient::ReConnect: ReConnect already in progress, skipping...");
       return;
+    }
 
     if (!await _reconnectLock.WaitAsync(1).ConfigureAwait(false))
+    {
+      _logger?.Debug("DeribitClient::ReConnect: ReConnect lock timed out");
       return;
+    }
+      
 
     try
     {
+      _logger?.Debug("DeribitClient::ReConnect: Trying to ReConnect to the endpoint...");
       ConnectionLost?.Invoke(this, EventArgs.Empty);
 
       var currentReConnectDelayFactor = 1.0;
@@ -190,12 +203,15 @@ public partial class DeribitClient : IDisposable
 
       while (!reConnectSuccess && ++reConnectAttempts <= ReConnectMaxAttempts)
       {
+        _logger?.Debug($"DeribitClient::ReConnect: ReConenct attempt {reConnectAttempts} of {ReConnectMaxAttempts}");
         _requestTaskSourceMap.CancelAndRemoveAll();
 
         if (_processMessageStreamTask is not null)
         {
+          _logger?.Debug("DeribitClient::ReConnect: _processMessageStreamTask is not null -> Cancelling message processing task");
           _processMessageStreamCts?.Cancel();
           await Task.WhenAll(_processMessageStreamTask).ConfigureAwait(false);
+          _logger?.Debug("DeribitClient::ReConnect: Message processing task cancelled");
         }
 
         AccessToken = null;
@@ -207,6 +223,7 @@ public partial class DeribitClient : IDisposable
 
         try
         {
+          _logger?.Debug("DeribitClient::ReConnect: Attempting to connect to the endpoint...");
           await _messageSource.Connect(_endpointUri).ConfigureAwait(false);
 
           _processMessageStreamCts = new CancellationTokenSource();
@@ -220,9 +237,11 @@ public partial class DeribitClient : IDisposable
 
           ConnectionRestored?.Invoke(this, EventArgs.Empty);
           reConnectSuccess = true;
+          _logger?.Debug("DeribitClient::ReConnect: ReConnect successful");
         }
         catch (Exception)
         {
+          _logger?.Error("DeribitClient::ReConnect: ReConnect attempt failed");
           // do nothing
         }
       }
@@ -277,11 +296,16 @@ public partial class DeribitClient : IDisposable
       }
       catch (SocketException sockEx) when (sockEx.SocketErrorCode == SocketError.ConnectionReset)
       {
+        _logger?.Debug("DeribitClient::Send: Caught SocketException with ConnectionReset - attempting to ReConnect and re-send the request");
         // In case of a connection reset during send, try re-connecting and send the request again
         await ReConnect().ConfigureAwait(false);
-
+        _logger?.Debug("DeribitClient::Send: ReConnect completed, re-sending the request");
         if (!IsConnected)
+        {
+          _logger?.Debug("DeribitClient::Send: Not connected after ReConnect attempt, throwing error");
           throw;
+        }
+          
 
         requestId = RequestIdGenerator.Next();
 
@@ -303,6 +327,7 @@ public partial class DeribitClient : IDisposable
     }
     catch (Exception)
     {
+      _logger?.Debug("DeribitClient::Send: Exception during Send - removing request from the map and re-throwing");
       _requestTaskSourceMap.TryRemove(requestId, out var _, out var _);
       throw;
     }
@@ -339,14 +364,20 @@ public partial class DeribitClient : IDisposable
     }
     catch (TaskCanceledException)
     {
+      _logger?.Debug("DeribitClient::ProcessMessageStream: TaskCanceledException - processing task cancelled");
       //ignore - just exit
     }
     catch (Exception)
     {
+      _logger?.Error("DeribitClient::ProcessMessageStream: Exception - processing task ended unexpectedly");
       await ReConnect().ConfigureAwait(false);
 
       if (!IsConnected)
+      {
+        _logger?.Debug("DeribitClient::ProcessMessageStream: Not connected after ReConnect attempt, exiting processing task");
         throw;
+      }
+        
     }
   }
 
