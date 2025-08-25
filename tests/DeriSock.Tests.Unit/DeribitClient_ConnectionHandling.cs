@@ -50,7 +50,7 @@ public sealed class DeribitClient_ConnectionHandling
       }
     );
 
-    _messageClient.ReceivedCalls().Should().HaveCount(5);
+    _messageClient.ReceivedCalls().Should().HaveCount(6);
   }
 
   [Fact]
@@ -95,7 +95,7 @@ public sealed class DeribitClient_ConnectionHandling
       }
     );
 
-    _messageClient.ReceivedCalls().Should().HaveCount(6);
+    _messageClient.ReceivedCalls().Should().HaveCount(7);
   }
 
   [Fact]
@@ -167,7 +167,7 @@ public sealed class DeribitClient_ConnectionHandling
       }
     );
 
-    _messageClient.ReceivedCalls().Should().HaveCount(7);
+    _messageClient.ReceivedCalls().Should().HaveCount(8);
   }
 
   [Fact]
@@ -244,6 +244,6 @@ public sealed class DeribitClient_ConnectionHandling
       }
     );
 
-    _messageClient.ReceivedCalls().Should().HaveCount(8);
+    _messageClient.ReceivedCalls().Should().HaveCount(9);
   }
 }
