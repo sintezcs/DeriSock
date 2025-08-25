@@ -144,7 +144,9 @@ public partial class DeribitClient : IDisposable
     _processMessageStreamCts = new CancellationTokenSource();
 
     _processMessageTaskStartedEvent.Reset();
-    _processMessageStreamTask = Task.Factory.StartNew(async () => await ProcessMessageStream(_processMessageStreamCts.Token).ConfigureAwait(false), TaskCreationOptions.LongRunning);
+    // Change: Avoid Task<Task> nesting by directly assigning the Task returned by ProcessMessageStream.
+    // This ensures cancellation/await truly waits for the loop to finish and prevents overlapping readers.
+    _processMessageStreamTask = ProcessMessageStream(_processMessageStreamCts.Token);
     _processMessageTaskStartedEvent.Wait(cancellationToken);
 
     Connected?.Invoke(this, EventArgs.Empty);
@@ -194,8 +196,9 @@ public partial class DeribitClient : IDisposable
 
         if (_processMessageStreamTask is not null)
         {
+          // Change: Properly cancel and await the single processing task to avoid races with a new loop.
           _processMessageStreamCts?.Cancel();
-          await Task.WhenAll(_processMessageStreamTask).ConfigureAwait(false);
+          await _processMessageStreamTask.ConfigureAwait(false);
         }
 
         AccessToken = null;
@@ -212,7 +215,8 @@ public partial class DeribitClient : IDisposable
           _processMessageStreamCts = new CancellationTokenSource();
 
           _processMessageTaskStartedEvent.Reset();
-          _processMessageStreamTask = Task.Factory.StartNew(async () => await ProcessMessageStream(_processMessageStreamCts.Token).ConfigureAwait(false), TaskCreationOptions.LongRunning);
+          // Change: Same unwrapped task start during reconnect to prevent Task<Task>.
+          _processMessageStreamTask = ProcessMessageStream(_processMessageStreamCts.Token);
           _processMessageTaskStartedEvent.Wait();
 
           await ReAuthenticateOnReConnect().ConfigureAwait(false);

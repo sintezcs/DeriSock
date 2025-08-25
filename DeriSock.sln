@@ -34,6 +34,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeriSock.Tests.Unit", "test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeriSock.Tests.DeribitApiMock", "tests\DeriSock.Tests.DeribitApiMock\DeriSock.Tests.DeribitApiMock.csproj", "{A3B2D42C-A4DA-4B74-A792-7F80AAA91840}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeriSock.ConsoleTest", "DeriSock.ConsoleTest\DeriSock.ConsoleTest.csproj", "{5AC94923-ACE6-4F89-A9C5-655674D6E7E7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +62,10 @@ Global
 		{A3B2D42C-A4DA-4B74-A792-7F80AAA91840}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A3B2D42C-A4DA-4B74-A792-7F80AAA91840}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A3B2D42C-A4DA-4B74-A792-7F80AAA91840}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AC94923-ACE6-4F89-A9C5-655674D6E7E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AC94923-ACE6-4F89-A9C5-655674D6E7E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AC94923-ACE6-4F89-A9C5-655674D6E7E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AC94923-ACE6-4F89-A9C5-655674D6E7E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,6 +78,7 @@ Global
 		{7438F452-DD0F-4030-97FE-61BE65AB9282} = {45D371F7-3267-4929-A020-B729E7A44E75}
 		{87047B3C-2334-48BD-9579-61F6FD2F3DAE} = {45D371F7-3267-4929-A020-B729E7A44E75}
 		{A3B2D42C-A4DA-4B74-A792-7F80AAA91840} = {45D371F7-3267-4929-A020-B729E7A44E75}
+		{5AC94923-ACE6-4F89-A9C5-655674D6E7E7} = {48164DAE-1C32-4346-AF5A-5E0DB9929D83}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD743E2C-4534-4451-BAB6-B2F8CAD86EC9}

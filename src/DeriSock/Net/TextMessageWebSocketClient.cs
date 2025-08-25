@@ -185,8 +185,11 @@ public sealed class TextMessageWebSocketClient : ITextMessageClient
           }
           catch (Exception ex)
           {
-            _logger?.Debug(ex, "TextMessageWebSocketClient::GetMessageStream: Exception during receive");
-            continue;
+            // Change: Treat any unexpected receive exception as fatal for this socket.
+            // We proactively disconnect and rethrow so the consumer can detect the failure and trigger reconnection.
+            _logger?.Debug(ex, "TextMessageWebSocketClient::GetMessageStream: Exception during receive; disconnecting and rethrowing");
+            await Disconnect(CancellationToken.None).ConfigureAwait(false);
+            throw;
           }
 
           if (receiveResult.MessageType == WebSocketMessageType.Close)
@@ -220,7 +223,11 @@ public sealed class TextMessageWebSocketClient : ITextMessageClient
         }
         catch (Exception ex)
         {
-          _logger?.Error(ex, "TextMessageWebSocketClient::GetMessageStream: Connection closed by unknown error");
+          // Change: Do not swallow errors here. Ensure the stream terminates with an exception
+          // so upper layers (DeribitClient) can react and initiate reconnection.
+          _logger?.Error(ex, "TextMessageWebSocketClient::GetMessageStream: Connection error; disconnecting and rethrowing");
+          await Disconnect(CancellationToken.None).ConfigureAwait(false);
+          throw;
         }
 
         if (!string.IsNullOrEmpty(message))
